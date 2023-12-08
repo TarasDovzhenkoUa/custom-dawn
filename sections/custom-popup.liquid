@@ -50,71 +50,84 @@
 
     <script>
         window.addEventListener('DOMContentLoaded', function() {
+            const   modal = document.querySelector('.custom-popup'),
+                    modalCloseBtn = document.querySelector('[data-close]'),
+                    body = document.querySelector('html'),
+                    isAnnouncementHidden = localStorage.getItem('announcementHidden'),
+                    showDelay = +{{ section.settings.show_delay }} * 1000;
+            let     openModalTime;
 
-            function modalTrigger() {
-                const   modal = document.querySelector('.custom-popup'),
-                        modalCloseBtn = document.querySelector('[data-close]'),
-                        body = document.querySelector('html'),
-                        isAnnouncementHidden = localStorage.getItem('announcementHidden'),
-                        showDelay = +{{ section.settings.show_delay }} * 1000;
-                let openModalTime;
+            function closeModal() {
+                modal.classList.add('hide');
+                modal.classList.remove('show');
+                body.style.overflow = '';
+                localStorage.setItem('announcementHidden', 'true');
+            }
 
-                modalTrigger.forEach(btn => {
-                    btn.addEventListener('click', openModal);
-                });
+            function openModal() {
+                    modal.classList.add('show');
+                    modal.classList.remove('hide');
+                    body.style.overflow = 'hidden';
 
-                function closeModal() {
-                    modal.classList.add('hide');
-                    modal.classList.remove('show');
-                    body.style.overflow = '';
-                    localStorage.setItem('announcementHidden', 'true');
-                }
-
-                function openModal() {
-                        modal.classList.add('show');
-                        modal.classList.remove('hide');
-                        body.style.overflow = 'hidden';
-
-                    if (localStorage.getItem('announcementHidden') !== 'true') {
-                        clearTimeout(openModalTime)
-                    }  
-                }
-                
-                modalCloseBtn.addEventListener('click', closeModal);
-
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        closeModal();
-                    }
-                });
-
-                document.addEventListener('keydown', (e) => {
-                    if (e.code === "Escape" && modal.classList.contains('show')) { 
-                        closeModal();
-                    }
-                });
-                
-                function showModalByTime() {
-                    openModalTime = setTimeout(openModal, showDelay);
-                }
-
-                if (isAnnouncementHidden !== 'true') {
-                    showModalByTime();
-                }
+                if (localStorage.getItem('announcementHidden') !== 'true') {
+                    clearTimeout(openModalTime)
+                }  
             }
             
-            function addToCart() {
-                const btnAddToCart = document.querySelector('[data-add-product]'),
+            modalCloseBtn.addEventListener('click', closeModal);
 
-                btnAddToCart.addEventListener("click", () => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
 
-                })
+            document.addEventListener('keydown', (e) => {
+                if (e.code === "Escape" && modal.classList.contains('show')) { 
+                    closeModal();
+                }
+            });
+            
+            function showModalByTime() {
+                openModalTime = setTimeout(openModal, showDelay);
             }
 
-            function modalTrigger();
+            if (isAnnouncementHidden !== 'true') {
+                showModalByTime();
+            }
+            
+            const btnAddToCart = document.querySelector('[data-add-product]');
+
+            btnAddToCart.addEventListener("click", () => {
+                let formData = {
+                    'items': [
+                        {% for product in product_list %}
+                            {
+                                'id': {{ product.selected_or_first_available_variant.id }},
+                                'quantity': 1
+                            }{% unless forloop.last %},{% endunless %}
+                        {% endfor %}
+                        ]
+                    };
+                fetch(window.Shopify.routes.root + 'cart/add.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => {
+                    return response.json();
+                })
+                .then(response => {
+                    closeModal();
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            })
         });
     </script>
-
 {% endif %}
 
 

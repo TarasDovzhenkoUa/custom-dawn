@@ -1,5 +1,5 @@
 .custom-popup {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     position: fixed;
@@ -69,6 +69,18 @@
 @media (max-width: 749px) {
     .custom-popup__wrap {
         grid-template-columns: 1fr;
-        row-gap: 30px;
+        row-gap: 10px;
+    }
+
+    .custom-popup__image {
+        max-height: 60vw;
+    }
+
+    .product__box {
+        width: 100%;
+    }
+
+    .product__box:not(:last-child) {
+        margin-bottom: 10px;
     }
 }
