@@ -1,0 +1,190 @@
+{% if section.settings.show_popup %}
+
+    {{ 'custom-popup.css' | asset_url | stylesheet_tag }}
+
+    {%- assign product_list = section.settings.product_list -%}
+
+    <div class="custom-popup custom-popup--{{ section.id }}">
+        <div class="custom-popup__wrap">
+            <div class="custom-popup__close" data-close>
+                {% render 'icon-popup-close' %}
+            </div>
+            {% if section.settings.img_section != blank %}
+                <div class="custom-popup__image">
+                    <img src="{{ section.settings.img_section | image_url: width: 720 }}" alt="modal klaviyo">
+                </div>
+            {% endif %}
+            <div class="custom-popup__content">
+                {% if section.settings.title != blank %}
+                    <h2 class="custom-popup__title h2">
+                        {{ section.settings.title }}
+                    </h2>
+                {% endif %}
+                {% if section.settings.subtitle != blank %}
+                    <div class="custom-popup__subtitle h4">
+                        {{ section.settings.subtitle }}
+                    </div>
+                {% endif %}
+                {% if product_list != blank %}
+                    <div class="custom-popup__products">
+                        {% for product in product_list %}
+                            <div class="product__box">
+                                {% render 'card-product', card_product: product %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <button data-add-product class="custom-popup__button button button--secondary">
+                    {{ 'products.product.add_to_cart' | t }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .custom-popup--{{ section.id }} .custom-popup__title,
+        .custom-popup--{{ section.id }} .custom-popup__subtitle {
+            color: {{ section.settings.text_color }};
+        }
+    </style>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            const   modal = document.querySelector('.custom-popup'),
+                    modalCloseBtn = document.querySelector('[data-close]'),
+                    body = document.querySelector('html'),
+                    isAnnouncementHidden = localStorage.getItem('announcementHidden'),
+                    showDelay = +{{ section.settings.show_delay }} * 1000;
+            let     openModalTime;
+
+            function closeModal() {
+                modal.classList.add('hide');
+                modal.classList.remove('show');
+                body.style.overflow = '';
+                localStorage.setItem('announcementHidden', 'true');
+            }
+
+            function openModal() {
+                    modal.classList.add('show');
+                    modal.classList.remove('hide');
+                    body.style.overflow = 'hidden';
+
+                if (localStorage.getItem('announcementHidden') !== 'true') {
+                    clearTimeout(openModalTime)
+                }  
+            }
+            
+            modalCloseBtn.addEventListener('click', closeModal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.code === "Escape" && modal.classList.contains('show')) { 
+                    closeModal();
+                }
+            });
+            
+            function showModalByTime() {
+                openModalTime = setTimeout(openModal, showDelay);
+            }
+
+            if (isAnnouncementHidden !== 'true') {
+                showModalByTime();
+            }
+            
+            const btnAddToCart = document.querySelector('[data-add-product]');
+
+            btnAddToCart.addEventListener("click", () => {
+                let formData = {
+                    'items': [
+                        {% for product in product_list %}
+                            {
+                                'id': {{ product.selected_or_first_available_variant.id }},
+                                'quantity': 1
+                            }{% unless forloop.last %},{% endunless %}
+                        {% endfor %}
+                        ]
+                    };
+                fetch(window.Shopify.routes.root + 'cart/add.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => {
+                    return response.json();
+                })
+                .then(response => {
+                    closeModal();
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            })
+        });
+    </script>
+{% endif %}
+
+
+{% schema %}
+    {
+      "name": "Custom popup",
+      "settings": [
+        {
+            "type": "checkbox",
+            "id": "show_popup",
+            "default": true,
+            "label": "Show popup"
+        },
+        {
+            "type": "image_picker",
+            "id": "img_section",
+            "label": "Section Image"
+        },
+        { 
+            "type":"text",
+            "id":"title",
+            "label":"Title",
+            "default": "Lorem ipsum dolor"
+        },
+        { 
+            "type":"text",
+            "id":"subtitle",
+            "label":"Subtitle",
+            "default": "Lorem ipsum dolor sit amet consectetur"
+        },
+        {
+            "type": "color",
+            "id": "text_color",
+            "label": "Text color",
+            "default": "#275D38"
+        },
+        { 
+            "type":"product_list",
+            "id":"product_list",
+            "label":"Product list",
+            "limit": 2
+        },
+        {
+            "type": "range",
+            "id": "show_delay",
+            "min": 5,
+            "max": 50,
+            "step": 1,
+            "label": "Delay sec",
+            "default": 15
+        }
+      ],
+      "presets": [
+        {
+          "name": "Custom popup"
+        }
+      ]
+    }
+  {% endschema %}
+
